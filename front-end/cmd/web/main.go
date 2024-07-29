@@ -11,11 +11,11 @@ import (
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		render(w, "test.page.gohtml")
+		render(w, "main.page.gohtml")
 	})
 
 	fmt.Println("Starting front end service on port 8081")
-	err := http.ListenAndServe(":8081", nil)
+	err := http.ListenAndServe(":80", nil)
 	if err != nil {
 		fmt.Println("Error no 2: ", err)
 		log.Panic(err)

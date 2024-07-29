@@ -1,0 +1,333 @@
+{{template "base" .}}
+
+{{define "content" }}
+    <div id="auth-page">
+        <div class="container d-flex justify-content-center align-items-center vh-100">
+            <div class="col-12 col-md-6 col-lg-4">
+                <h1 class="mb-3 d-flex justify-content-center align-items-center"> Welcome to Mailer!</h1>
+                <form style="outline: 1px solid silver; padding: 2em;" id="auth-form">
+                    <div class="mb-3">
+                        <label for="authEmail" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="authEmail" aria-describedby="emailHelp">
+                    </div>
+                    <div class="mb-3">
+                        <label for="authPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="authPassword">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="mail-page" style="display:none;">
+        <div class="container d-flex justify-content-center align-items-center vh-100">
+            <div class="col-12 col-md-6 col-lg-4">
+                <h1 class="mb-3 d-flex justify-content-center align-items-center" id="hi-text"></h1>
+                <form style="outline: 1px solid silver; padding: 2em;" id="mail-form">
+                    <div class="mb-3">
+                        <label for="toEmail" class="form-label">To Email Address:</label>
+                        <input type="email" class="form-control" id="toEmail" aria-describedby="emailHelp">
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Title:</label>
+                        <input type="text" class="form-control" id="subject">
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Messsage:</label>
+                        <input type="text" class="form-control" id="message">
+                    </div>
+                    <div id="error-section">
+                    </div>
+                    <button type="submit-mail" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{{end}}
+
+{{define "js"}}
+    <script>
+    const authPage = document.getElementById("auth-page")
+    const authForm = document.getElementById("auth-form")
+    const mailPage = document.getElementById("mail-page")
+    const toEmail  = document.getElementById("toEmail")
+    const title    = document.getElementById("subject")
+    const msg      = document.getElementById("message")
+    const errorSection = document.getElementById("error-section")
+    const hiText = document.getElementById("hi-text")
+    let userEmail
+
+    let brokerBtn     = document.getElementById("brokerBtn")
+    let authBrokerBtn = document.getElementById("authBrokerBtn")
+    let logBtn        = document.getElementById("logBtn")
+    let mailBtn       = document.getElementById("mailBtn")
+    let logGBtn       = document.getElementById("logGBtn")
+
+
+    let output = document.getElementById("output")
+    let sent = document.getElementById("payload")
+    let received = document.getElementById("received")
+    const backendURL = {{.BrokerURL}}
+    console.log('The backed url is ', backendURL)
+
+    authForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let email = document.getElementById("authEmail").value
+        let password = document.getElementById("authPassword").value
+
+        const payload = {
+            action: "auth",
+            auth: {
+                email: "" + email,
+                password: "" + password,
+            }
+        }
+
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json')
+
+        const body = {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: headers,
+        }
+
+        fetch(`${backendURL}/handle`, body)
+        .then((response) => response.json())
+        .then((data) => {
+
+            console.log('Response: ' + data.message)
+            {{/* sent.innerHTML = JSON.stringify(payload, undefined, 4 )
+            received.innerHTML = JSON.stringify(data, undefined, 4) */}}
+            if( data.error){
+                console.log(`Error is: ${data.error}`)
+                {{/* output.innerHTML += `<br> <strong> Error:</string> ${data.message}` */}}
+            }else{
+                userEmail = email
+                hiText.innerHTML = `Hi, ${email}`
+                authPage.style.display = "none";
+                mailPage.style.display = "block";
+            }
+        })
+        .catch((error) => {
+            console.log('error: ', error)
+        })
+
+        
+
+    })
+
+
+    mailPage.addEventListener("submit", (e) => {
+        e.preventDefault()
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+        // Check if the email is filled and formatted right
+        if( toEmail.length == 0 || !emailPattern.test(toEmail.value)){
+            errorSection.innerHTML = `<br> <strong> Error:</string> Invalid email format`
+            return
+        }
+
+        const payload = {
+            action: "mail",
+            mail: {
+                from: userEmail,
+                to: toEmail.value,
+                subject: title.value,
+                message: msg.value,
+            }
+        }
+
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json')
+
+        const body = {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: headers,
+        }
+
+        fetch(`${backendURL}/handle`, body)
+        .then((response) => response.json())
+        .then((data) => {
+            {{/* sent.innerHTML = JSON.stringify(payload, undefined, 4 )
+            received.innerHTML = JSON.stringify(data, undefined, 4) */}}
+            if( data.error){
+                errorSection += `<br> <strong> Error:</string> ${data.message}`
+            }else{
+                {{/* output.innerHTML += `<br><strong>Response from broker service </storage>: ${data.message}` */}}
+                confirm(`You have sent an email to ${toEmail.value}`)
+            }
+        })
+        .catch((error) => {
+            output.innerHTML += "<br><br> Error: " + error
+        })
+
+
+    })
+
+    {{/* const backendURL = "http://localhost:8080" */}}
+
+
+    mailBtn.addEventListener("click", () => {
+        const payload = {
+            action: "mail",
+            mail: {
+                from: "me@example.com",
+                to: "you@example.com",
+                subject: "Test Mail",
+                message: "Just to test",
+            }
+        }
+
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json')
+
+        const body = {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: headers,
+        }
+
+        fetch(`${backendURL}/handle`, body)
+        .then((response) => response.json())
+        .then((data) => {
+            sent.innerHTML = JSON.stringify(payload, undefined, 4 )
+            received.innerHTML = JSON.stringify(data, undefined, 4)
+            if( data.error){
+                output.innerHTML += `<br> <strong> Error:</string> ${data.message}`
+            }else{
+                output.innerHTML += `<br><strong>Response from broker service </storage>: ${data.message}`
+            }
+        })
+        .catch((error) => {
+            output.innerHTML += "<br><br> Error: " + error
+        })
+    })
+
+    logGBtn.addEventListener("click", () => {
+        const payload = {
+            action: "log",
+            log:{
+                name: "event",
+                data: "some kind of gRPC data",
+            }
+        }
+
+        const headers = new Headers()
+        headers.append("Content-Type", "application/json")
+
+        const body = {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: headers,
+        }
+
+        fetch(`${backendURL}/log-grpc`, body)
+        .then((response) => response.json())
+        .then((data) => {
+            sent.innerHTML = JSON.stringify(payload, undefined, 4 )
+            received.innerHTML = JSON.stringify(data, undefined, 4)
+            if( data.error){
+                output.innerHTML += `<br> <strong> Error:</string> ${data.message}`
+            }else{
+                output.innerHTML += `<br><strong>Response from broker service </storage>: ${data.message}`
+            }
+        })
+        .catch((error) => {
+            output.innerHTML += "<br><br> Error: " + error
+        })
+    })
+
+
+    logBtn.addEventListener("click", () => {
+        const payload = {
+            action: "log",
+            log:{
+                name: "event",
+                data: "some kind of data",
+            }
+        }
+
+        const headers = new Headers()
+        headers.append("Content-Type", "application/json")
+
+        const body = {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: headers,
+        }
+
+        fetch(`${backendURL}/handle`, body)
+        .then((response) => response.json())
+        .then((data) => {
+            sent.innerHTML = JSON.stringify(payload, undefined, 4 )
+            received.innerHTML = JSON.stringify(data, undefined, 4)
+            if( data.error){
+                output.innerHTML += `<br> <strong> Error:</string> ${data.message}`
+            }else{
+                output.innerHTML += `<br><strong>Response from broker service </storage>: ${data.message}`
+            }
+        })
+        .catch((error) => {
+            output.innerHTML += "<br><br> Error: " + error
+        })
+    })
+
+    authBrokerBtn.addEventListener("click", () => {
+        const payload = {
+            action: "auth",
+            auth: {
+                email: "admin@example.com",
+                password: "verysecret",
+            }
+        }
+
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json')
+
+        const body = {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: headers,
+        }
+
+        fetch(`${backendURL}/handle`, body)
+        .then((response) => response.json())
+        .then((data) => {
+            sent.innerHTML = JSON.stringify(payload, undefined, 4 )
+            received.innerHTML = JSON.stringify(data, undefined, 4)
+            if( data.error){
+                output.innerHTML += `<br> <strong> Error:</string> ${data.message}`
+            }else{
+                output.innerHTML += `<br><strong>Response from broker service </storage>: ${data.message}`
+            }
+        })
+        .catch((error) => {
+            output.innerHTML += "<br><br> Error: " + error
+        })
+    })
+
+    brokerBtn.addEventListener("click", () => {
+        const body = {
+            method: "POST",
+        }
+
+        console.log('The url is', {{.BrokerURL}})
+        fetch(backendURL, body)
+        .then((response) => response.json())
+        .then((data) => {
+            sent.innerHTML = "empty post request"
+            received.innerHTML = JSON.stringify(data, undefined, 4)
+            if( data.error){
+                console.log(data.message)
+            }else{
+                output.innerHTML += `<br><strong>Response from broker service </storage>: ${data.message}`
+            }
+        })
+        .catch((error) => {
+            output.innerHTML += "<br><br> Error: " + error
+        })
+    })
+    </script>
+{{end}}
